@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol PresenterDelegate{
+protocol PresenterDelegate: class{
     func updateTableView()
 }
 
@@ -17,7 +17,7 @@ class Presenter{
     private(set) var model: ToDoModel
     private(set) var document: ToDoData?
     
-    var delegate: PresenterDelegate?
+    weak var delegate: PresenterDelegate?
     
     var done: [ToDoModel.ToDoInfo]{
         return model.toDoList.filter{$0.isDone}

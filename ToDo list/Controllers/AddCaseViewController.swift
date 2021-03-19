@@ -9,16 +9,17 @@ import UIKit
 
 class AddCaseViewController: UIViewController, UITextFieldDelegate {
     
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        textField.delegate = self
+    }
+    
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         return true
     }
 
-    @IBOutlet weak var textField: UITextField!{
-        didSet{
-            textField.delegate = self
-        }
-    }
+    @IBOutlet weak var textField: UITextField!
     
     var presenter = Presenter()
     
