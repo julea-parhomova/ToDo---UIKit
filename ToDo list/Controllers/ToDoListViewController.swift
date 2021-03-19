@@ -71,11 +71,12 @@ extension ToDoListViewController: UITableViewDataSource, UITableViewDelegate{
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = table.dequeueReusableCell(withIdentifier: "toDoCell", for: indexPath)
         if let toDoCell = cell as? ToDoTableViewCell {
-            //мы же можем сделать здесь ащксу forced unwrapping? потому что если нет презентера - то количество элементтов = 0 и эта функция не вызовется
-            let text = NSAttributedString(string: presenter!.model.toDoList[indexPath.item].thingToDo, attributes: [.font: font])
-            toDoCell.label.attributedText = text
-            toDoCell.label.textColor = !presenter!.model.toDoList[indexPath.item].isDone ? #colorLiteral(red: 0.2392156869, green: 0.6745098233, blue: 0.9686274529, alpha: 1) : #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
-            toDoCell.delegate = self
+            if let currentPresenter = presenter{
+                let text = NSAttributedString(string: currentPresenter.model.toDoList[indexPath.item].thingToDo, attributes: [.font: font])
+                toDoCell.label.attributedText = text
+                toDoCell.label.textColor = !currentPresenter.model.toDoList[indexPath.item].isDone ? #colorLiteral(red: 0.2392156869, green: 0.6745098233, blue: 0.9686274529, alpha: 1) : #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
+                toDoCell.delegate = self
+            }
         }
         return cell
     }

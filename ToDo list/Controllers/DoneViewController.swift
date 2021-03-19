@@ -24,11 +24,6 @@ class DoneViewController: UIViewController{
         presenter?.delegate = self
     }
     
-    /*override func viewDidDisappear(_ animated: Bool) {
-     super.viewDidDisappear(animated)
-     presenter.close()
-     }*/
-    
     @IBOutlet weak var table: UITableView!
     
     @IBAction func removeAll(_ sender: UIButton) {
@@ -55,10 +50,12 @@ extension DoneViewController: UITableViewDataSource, UITableViewDelegate{
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = table.dequeueReusableCell(withIdentifier: "toDoCell", for: indexPath)
         if let toDoCell = cell as? ToDoTableViewCell {
-            let text = NSAttributedString(string: presenter!.done[indexPath.item].thingToDo, attributes: [.font: font])
-            toDoCell.label.attributedText = text
-            toDoCell.label.textColor = #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
-            toDoCell.delegate = self
+            if let currentPresenter = presenter{
+                let text = NSAttributedString(string: currentPresenter.done[indexPath.item].thingToDo, attributes: [.font: font])
+                toDoCell.label.attributedText = text
+                toDoCell.label.textColor = #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
+                toDoCell.delegate = self
+            }
         }
         return cell
     }
