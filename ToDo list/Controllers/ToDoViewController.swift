@@ -6,14 +6,28 @@
 //
 
 import UIKit
+import CoreData
 
-class ToDoViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, ToDoCellDelegate, PresenterDelegate {
+class ToDoViewController: UIViewController, NSFetchedResultsControllerDelegate {
     
     var presenter: Presenter!
+    var container = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer
+    var fetchedResultsController: NSFetchedResultsController<Affairs>?
+    var managedObjectContext: NSManagedObjectContext?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "To Do List"
+        if managedObjectContext == nil{
+            let notificationCenter = NotificationCenter.default
+            notificationCenter.addObserver(self, selector: #selector(managedObjectContextDidSave), name: NSNotification.Name.NSManagedObjectContextDidSave, object: managedObjectContext)
+        }
+        updateUI()
+    }
+    
+    @objc
+    func managedObjectContextDidSave(notification: NSNotification) {
+        updateUI()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -22,30 +36,6 @@ class ToDoViewController: UIViewController, UITableViewDataSource, UITableViewDe
         presenter.delegate = self
     }
     
-    /*override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        presenter.close()
-    }*/
-    
-    //MARK: - Observe count of ToDo Items
-    
-    private var toDoCountObservee: NSObjectProtocol?
-    
-    //MARK: - presenter Delegate
-    
-    func updateTableView() {
-        table.reloadData()
-    }
-    
-    //MARK: - cell Delegate
-    
-    func action(for cell: ToDoTableViewCell, action: ToDoTableViewCell.ActionForCell) {
-        presenter.actionWithCell(for: cell, action: action)
-    }
-    
-    //MARK: - tableView delegate
-    
-    
     @IBOutlet weak var table: UITableView!{
         didSet{
             table.dataSource = self
@@ -53,12 +43,64 @@ class ToDoViewController: UIViewController, UITableViewDataSource, UITableViewDe
         }
     }
     
+    private func updateUI(){
+       if let context = container?.viewContext {
+            let request: NSFetchRequest<Affairs> = Affairs.fetchRequest()
+            //?
+            request.sortDescriptors = [NSSortDescriptor(
+                key: "created",
+                ascending: true
+            )]
+            request.predicate = NSPredicate(format: "isDone == %@", NSNumber(value: false))
+            fetchedResultsController = NSFetchedResultsController<Affairs>(
+                fetchRequest: request,
+                managedObjectContext: context,
+                sectionNameKeyPath: nil,
+                cacheName: nil
+            )
+            fetchedResultsController?.delegate = self
+            try? fetchedResultsController?.performFetch()
+            table.reloadData()
+        }
+    }
+    
+    @IBAction func removeAll(_ sender: UIButton) {
+        if let curContainer = container{
+            presenter.removeElements(removeFor: .toDo, container: curContainer)
+        }
+    }
+    
+    @IBAction func doneAll(_ sender: UIButton) {
+        if let curContainer = container{
+            presenter.doneAll(container: curContainer)
+        }
+    }
+    
+    
+    //MARK: - Navigation
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        super.prepare(for: segue, sender: sender)
+        if segue.identifier == "Add Case"{
+            if let destination = segue.destination as? AddCaseViewController{
+                destination.container = container
+            }
+        }
+    }
+}
+
+
+extension ToDoViewController: UITableViewDataSource, UITableViewDelegate{
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
+        return fetchedResultsController?.sections?.count ?? 1
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return presenter.toDo.count
+        if let sections = fetchedResultsController?.sections, sections.count > 0 {
+            return sections[section].numberOfObjects
+        } else {
+            return 0
+        }
     }
     
     private var font: UIFont{
@@ -68,16 +110,30 @@ class ToDoViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = table.dequeueReusableCell(withIdentifier: "toDoCell", for: indexPath)
         if let toDoCell = cell as? ToDoTableViewCell {
-            let text = NSAttributedString(string: presenter.toDo[indexPath.item].thingToDo, attributes: [.font: font])
-            toDoCell.label.attributedText = text
-            toDoCell.label.textColor = #colorLiteral(red: 0.2392156869, green: 0.6745098233, blue: 0.9686274529, alpha: 1)
-            toDoCell.delegate = self
+            if let toDo = fetchedResultsController?.object(at: indexPath) {
+                toDoCell.label.attributedText = NSAttributedString(string: toDo.text ?? "", attributes: [.font: font])
+                toDoCell.label.textColor = !toDo.isDone ? #colorLiteral(red: 0.2392156869, green: 0.6745098233, blue: 0.9686274529, alpha: 1) : #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
+                toDoCell.delegate = self
+            }
         }
         return cell
     }
-    //MARK: - Action
+}
+
+extension ToDoViewController: ToDoCellDelegate{
     
-    @IBAction func removeAll(_ sender: UIButton) {
-        presenter.removetoDo()
+    func action(for cell: ToDoTableViewCell, action: ToDoTableViewCell.ActionForCell) {
+        if let curContainer = container{
+            try? presenter.actionWithCell(for: cell, action: action, container: curContainer)
+        }
+    }
+    
+    
+}
+
+extension ToDoViewController: PresenterDelegate{
+    func updateTableView() {
+        updateUI()
+        table.reloadData()
     }
 }

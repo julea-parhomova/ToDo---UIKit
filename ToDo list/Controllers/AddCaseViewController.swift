@@ -6,8 +6,12 @@
 //
 
 import UIKit
+import CoreData
 
 class AddCaseViewController: UIViewController, UITextFieldDelegate {
+    
+    var container: NSPersistentContainer?
+    var presenter = Presenter()
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
@@ -20,21 +24,10 @@ class AddCaseViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
-    var presenter = Presenter()
-    
     @IBAction func close(_ sender: UIButton) {
         if sender.titleLabel?.text == "Add"{
-            presenter.addCase(with: textField.text ?? "")
-        }
-        if let presentingController = self.presentingViewController as? UITabBarController, let navController = presentingController.selectedViewController as? UINavigationController{
-            if let lowerController = navController.viewControllers.first as? ToDoListViewController{
-                //я думаю это не лучший вариант
-                //но пока не могу придумать другой вариант
-                lowerController.presenter = self.presenter
-                lowerController.updateTableView()
-            } else if let lowerController = navController.viewControllers.first as? ToDoViewController{
-                lowerController.presenter = self.presenter
-                lowerController.updateTableView()
+            if let context = container?.viewContext{
+                self.presenter.addAffrairs(text: textField.text ?? "", context: context)
             }
         }
         presentingViewController?.dismiss(animated: true)
